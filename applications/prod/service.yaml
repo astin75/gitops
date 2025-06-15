@@ -10,15 +10,10 @@ spec:
   type: NodePort
   ports:
   - port: 80
-    targetPort: 3000
+    targetPort: 80
     nodePort: 31000
     protocol: TCP
-    name: frontend
-  - port: 8000
-    targetPort: 8000
-    nodePort: 31001
-    protocol: TCP
-    name: backend
+    name: http
   selector:
     app: visitor-app
     environment: prod
