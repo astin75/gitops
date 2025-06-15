@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: visitor-backend
+  name: visitor-app
   namespace: dev
   labels:
-    app: visitor-backend
+    app: visitor-app
     environment: dev
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: visitor-backend
+      app: visitor-app
       environment: dev
   template:
     metadata:
       labels:
-        app: visitor-backend
+        app: visitor-app
         environment: dev
     spec:
       containers:
@@ -24,6 +24,7 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
+          name: backend
         env:
         - name: ENVIRONMENT
           value: "development"
@@ -46,3 +47,21 @@ spec:
             port: 8000
           initialDelaySeconds: 5
           periodSeconds: 5
+      - name: frontend
+        image: astin75/visitor-frontend:202506151630
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+          name: frontend
+        env:
+        - name: NEXT_PUBLIC_API_URL
+          value: "http://localhost:8000"
+        - name: ENVIRONMENT
+          value: "development"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"

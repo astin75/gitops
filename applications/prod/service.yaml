@@ -1,19 +1,24 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: visitor-frontend-service
+  name: visitor-app-service
   namespace: prod
   labels:
-    app: visitor-frontend
+    app: visitor-app
     environment: prod
 spec:
   type: NodePort
   ports:
   - port: 80
     targetPort: 3000
-    nodePort: 31030
+    nodePort: 31000
     protocol: TCP
-    name: http
+    name: frontend
+  - port: 8000
+    targetPort: 8000
+    nodePort: 31001
+    protocol: TCP
+    name: backend
   selector:
-    app: visitor-frontend
+    app: visitor-app
     environment: prod

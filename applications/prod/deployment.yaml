@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: visitor-backend
+  name: visitor-app
   namespace: prod
   labels:
-    app: visitor-backend
+    app: visitor-app
     environment: prod
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: visitor-backend
+      app: visitor-app
       environment: prod
   template:
     metadata:
       labels:
-        app: visitor-backend
+        app: visitor-app
         environment: prod
     spec:
       containers:
@@ -24,6 +24,7 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
+          name: backend
         env:
         - name: ENVIRONMENT
           value: "production"
@@ -49,7 +50,37 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /app/data
+      - name: frontend
+        image: astin75/visitor-frontend:202506151630
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+          name: frontend
+        env:
+        - name: NEXT_PUBLIC_API_URL
+          value: "http://localhost:8000"
+        - name: ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
       volumes:
       - name: data
         persistentVolumeClaim:
           claimName: visitor-data-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: visitor-data-pvc
+  namespace: prod
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

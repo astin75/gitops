@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: visitor-app-config
+  namespace: prod
+  labels:
+    app: visitor-app
+    environment: prod
+data:
+  app.properties: |
+    environment=production
+    debug=false
+    log_level=info

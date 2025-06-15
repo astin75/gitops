@@ -15,15 +15,13 @@ gitops/
 │   └── prod.yaml            # Prod 네임스페이스
 ├── applications/             # 애플리케이션 매니페스트
 │   ├── dev/                 # Dev 환경 설정
-│   │   ├── deployment.yaml  # Dev 배포 설정
-│   │   ├── service.yaml     # Dev 서비스
-│   │   ├── configmap.yaml   # Dev 설정
-│   │   └── ingress.yaml.disabled  # Dev 인그레스 (비활성화됨)
+│   │   ├── deployment.yaml  # Frontend + Backend 통합 배포
+│   │   ├── service.yaml     # 통합 서비스 (NodePort)
+│   │   └── configmap.yaml   # 설정
 │   └── prod/                # Prod 환경 설정
-│       ├── deployment.yaml  # Prod 배포 설정 (더 많은 리소스)
-│       ├── service.yaml     # Prod 서비스
-│       ├── configmap.yaml   # Prod 설정 (보안 강화)
-│       └── ingress.yaml.disabled  # Prod 인그레스 (비활성화됨)
+│       ├── deployment.yaml  # Frontend + Backend 통합 배포 (PVC 포함)
+│       ├── service.yaml     # 통합 서비스 (NodePort)
+│       └── configmap.yaml   # 설정
 └── README.md
 ```
 
@@ -199,11 +197,11 @@ minikube service visitor-frontend-service -n prod
 
 ### EC2 보안 그룹 설정
 EC2 인스턴스의 보안 그룹에서 다음 포트를 열어주세요:
-- **30030**: Dev Frontend
-- **30080**: Dev Backend API
-- **31030**: Prod Frontend
-- **31080**: Prod Backend API
-- **8080, 8443**: ArgoCD UI (LoadBalancer/tunnel 사용 시)
+- **30000**: Dev Frontend
+- **30001**: Dev Backend API
+- **31000**: Prod Frontend
+- **31001**: Prod Backend API
+- **30200, 30443**: ArgoCD UI
 
 ### 접속 방법
 
@@ -214,27 +212,16 @@ EC2 인스턴스의 보안 그룹에서 다음 포트를 열어주세요:
 # ArgoCD UI
 minikube service argocd-server-nodeport -n argocd
 
-# Ingress를 통한 통합 접속 (Frontend + Backend)
-# 1. Ingress addon 활성화 (최초 1회)
-minikube addons enable ingress
+# Dev 환경 접속
+minikube service visitor-app-service -n dev --url=true
+# 첫 번째 URL (포트 30000): Frontend
+# 두 번째 URL (포트 30001): Backend API (/docs 추가 가능)
 
-# 2. /etc/hosts 파일에 추가
-echo "$(minikube ip) dev.visitor-app.local prod.visitor-app.local" | sudo tee -a /etc/hosts
+# Prod 환경 접속
+minikube service visitor-app-service -n prod --url=true
+# 첫 번째 URL (포트 31000): Frontend
+# 두 번째 URL (포트 31001): Backend API (/docs 추가 가능)
 
-# 3. 접속
-# Dev: http://dev.visitor-app.local:30893
-# Prod: http://prod.visitor-app.local:30893
-
-# 또는 개별 서비스 접속
-minikube service visitor-frontend-service -n dev
-minikube service visitor-backend-service -n dev
-
-# Prod Frontend
-minikube service visitor-frontend-service -n prod
-
-# Prod Backend API 문서
-minikube service visitor-backend-service -n prod
-# 열린 URL에 /docs 추가
 ```
 
 #### EC2 환경
