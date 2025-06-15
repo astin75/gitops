@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: visitor-backend
+  namespace: dev
+  labels:
+    app: visitor-backend
+    environment: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: visitor-backend
+      environment: dev
+  template:
+    metadata:
+      labels:
+        app: visitor-backend
+        environment: dev
+    spec:
+      containers:
+      - name: backend
+        image: nibceguy/visitor-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "development"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: visitor-frontend
+  namespace: dev
+  labels:
+    app: visitor-frontend
+    environment: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: visitor-frontend
+      environment: dev
+  template:
+    metadata:
+      labels:
+        app: visitor-frontend
+        environment: dev
+    spec:
+      containers:
+      - name: frontend
+        image: nibceguy/visitor-frontend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NEXT_PUBLIC_API_URL
+          value: "http://visitor-backend-service:8000"
+        - name: ENVIRONMENT
+          value: "development"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"

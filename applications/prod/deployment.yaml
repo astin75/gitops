@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: visitor-backend
+  namespace: prod
+  labels:
+    app: visitor-backend
+    environment: prod
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: visitor-backend
+      environment: prod
+  template:
+    metadata:
+      labels:
+        app: visitor-backend
+        environment: prod
+    spec:
+      containers:
+      - name: backend
+        image: nibceguy/visitor-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: visitor-data-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: visitor-frontend
+  namespace: prod
+  labels:
+    app: visitor-frontend
+    environment: prod
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: visitor-frontend
+      environment: prod
+  template:
+    metadata:
+      labels:
+        app: visitor-frontend
+        environment: prod
+    spec:
+      containers:
+      - name: frontend
+        image: nibceguy/visitor-frontend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NEXT_PUBLIC_API_URL
+          value: "http://visitor-backend-service:8000"
+        - name: ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: visitor-data-pvc
+  namespace: prod
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
