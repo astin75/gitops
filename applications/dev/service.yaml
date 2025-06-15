@@ -7,10 +7,11 @@ metadata:
     app: visitor-backend
     environment: dev
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
   - port: 8000
     targetPort: 8000
+    nodePort: 30080
     protocol: TCP
     name: http
   selector:
@@ -26,10 +27,11 @@ metadata:
     app: visitor-frontend
     environment: dev
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
   - port: 80
     targetPort: 3000
+    nodePort: 30030
     protocol: TCP
     name: http
   selector:

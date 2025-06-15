@@ -18,12 +18,12 @@ gitops/
 │   │   ├── deployment.yaml  # Dev 배포 설정
 │   │   ├── service.yaml     # Dev 서비스
 │   │   ├── configmap.yaml   # Dev 설정
-│   │   └── ingress.yaml     # Dev 인그레스
+│   │   └── ingress.yaml.disabled  # Dev 인그레스 (비활성화됨)
 │   └── prod/                # Prod 환경 설정
 │       ├── deployment.yaml  # Prod 배포 설정 (더 많은 리소스)
 │       ├── service.yaml     # Prod 서비스
 │       ├── configmap.yaml   # Prod 설정 (보안 강화)
-│       └── ingress.yaml     # Prod 인그레스 (SSL 설정)
+│       └── ingress.yaml.disabled  # Prod 인그레스 (비활성화됨)
 └── README.md
 ```
 
@@ -110,18 +110,18 @@ argocd app get sample-app-prod
 
 ### Dev 환경
 - **Replicas**: 2개 (빠른 테스트)
-- **리소스**: 적음 (CPU: 250m-500m, Memory: 64Mi-128Mi)
+- **리소스**: 적음 (CPU: 100m-200m, Memory: 128Mi-256Mi)
 - **자동 동기화**: 활성화 (selfHeal: true)
 - **디버그**: 활성화
-- **Ingress**: HTTP only
+- **Service**: NodePort (30030: Frontend, 30080: Backend)
 
 ### Prod 환경
 - **Replicas**: 3개 (고가용성)
-- **리소스**: 많음 (CPU: 500m-1000m, Memory: 128Mi-256Mi)
+- **리소스**: 많음 (CPU: 250m-500m, Memory: 256Mi-512Mi)
 - **자동 동기화**: 비활성화 (수동 승인 필요)
 - **헬스체크**: Liveness/Readiness 프로브 설정
 - **보안**: 강화된 nginx 설정, SSL 활성화
-- **Ingress**: HTTPS with TLS
+- **Service**: NodePort (필요 시 LoadBalancer로 변경 가능)
 
 ## 🔧 커스터마이징
 
@@ -146,6 +146,49 @@ kubectl scale deployment sample-app -n dev --replicas=5
 
 # GitOps 방식 - deployment.yaml 수정 후 commit & push
 ```
+
+### 애플리케이션 정보
+이 GitOps 프로젝트는 방문자 카운터 애플리케이션을 배포합니다:
+- **Frontend**: Next.js 기반 UI (포트 30030)
+- **Backend**: FastAPI 기반 API (포트 30080)
+- **이미지**: `astin75/visitor-frontend:202506151630`, `astin75/visitor-backend:202506151630`
+
+## 🚀 EC2 Minikube 배포 가이드
+
+이 프로젝트는 EC2의 Minikube 환경에 최적화되어 있습니다. Ingress 대신 NodePort를 사용하여 간단하게 배포할 수 있습니다.
+
+### EC2 보안 그룹 설정
+EC2 인스턴스의 보안 그룹에서 다음 포트를 열어주세요:
+- **30030**: Frontend (방문자 카운터 UI)
+- **30080**: Backend API
+- **8080**: ArgoCD UI (선택사항)
+
+### 접속 방법
+```bash
+# Frontend 접속
+http://YOUR_EC2_PUBLIC_IP:30030
+
+# Backend API 접속
+http://YOUR_EC2_PUBLIC_IP:30080
+
+# API 문서 확인
+http://YOUR_EC2_PUBLIC_IP:30080/docs
+```
+
+### Minikube Tunnel 사용 (선택사항)
+```bash
+# EC2에서 실행
+minikube tunnel
+
+# Service의 Cluster IP로 직접 접속 가능
+kubectl get svc -n dev
+```
+
+### 왜 NodePort를 사용하나요?
+- **간단한 설정**: Ingress Controller 설치 불필요
+- **빠른 배포**: 추가 리소스 없이 바로 사용 가능
+- **Minikube 최적화**: Minikube 환경에 가장 적합한 방식
+- **보안**: EC2 보안 그룹으로 접근 제어 가능
 
 ## 📚 추가 학습 자료
 - [ArgoCD 공식 문서](https://argo-cd.readthedocs.io/)
