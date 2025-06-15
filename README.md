@@ -59,23 +59,22 @@ kubectl wait --for=condition=available --timeout=600s deployment/argocd-server -
 
 ### 4. ArgoCD 접속
 
-#### 옵션 1: Minikube tunnel 사용 (권장)
+#### Minikube service 사용
 ```bash
-# ArgoCD 서비스를 LoadBalancer로 변경
-kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
-
-# 별도 터미널에서 실행 (sudo 권한 필요)
-minikube tunnel
+# ArgoCD NodePort 서비스 생성
+kubectl apply -f argocd/argocd-server-nodeport.yaml
 
 # 초기 admin 비밀번호 확인
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d && echo
 
-# 브라우저에서 http://127.0.0.1 접속
+# ArgoCD UI 열기 (브라우저가 자동으로 열림)
+minikube service argocd-server-nodeport -n argocd
+
 # Username: admin
 # Password: 위에서 확인한 비밀번호
 ```
 
-#### 옵션 2: 포트 포워딩 사용
+#### 포트 포워딩 사용 (대안)
 ```bash
 # 초기 admin 비밀번호 확인
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d && echo
@@ -162,9 +161,37 @@ kubectl scale deployment sample-app -n dev --replicas=5
 
 ### 애플리케이션 정보
 이 GitOps 프로젝트는 방문자 카운터 애플리케이션을 배포합니다:
-- **Frontend**: Next.js 기반 UI (포트 30030)
-- **Backend**: FastAPI 기반 API (포트 30080)
+- **Frontend**: Next.js 기반 UI (중앙 버튼 클릭 시 카운터 증가)
+- **Backend**: FastAPI 기반 API (방문자 수 저장 및 조회)
 - **이미지**: `astin75/visitor-frontend:202506151630`, `astin75/visitor-backend:202506151630`
+
+### 빠른 시작 가이드 (macOS Minikube)
+```bash
+# 1. 저장소 클론 및 설정
+git clone <your-repo-url>
+cd gitops
+
+# 2. 네임스페이스 및 ArgoCD 설치
+kubectl apply -f namespaces/
+kubectl apply -f argocd/install.yaml
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -f argocd/argocd-server-nodeport.yaml
+
+# 3. ArgoCD Applications 생성
+kubectl apply -f argocd/app-dev.yaml
+kubectl apply -f argocd/app-prod.yaml
+
+# 4. 모든 서비스 접속 (브라우저가 자동으로 열림)
+# ArgoCD UI
+minikube service argocd-server-nodeport -n argocd
+# 비밀번호: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
+
+# Dev 환경 Frontend
+minikube service visitor-frontend-service -n dev
+
+# Prod 환경 Frontend  
+minikube service visitor-frontend-service -n prod
+```
 
 ## 🚀 EC2 Minikube 배포 가이드
 
@@ -176,27 +203,38 @@ EC2 인스턴스의 보안 그룹에서 다음 포트를 열어주세요:
 - **30080**: Dev Backend API
 - **31030**: Prod Frontend
 - **31080**: Prod Backend API
-- **80, 443**: ArgoCD UI (LoadBalancer 사용 시)
+- **8080, 8443**: ArgoCD UI (LoadBalancer/tunnel 사용 시)
 
 ### 접속 방법
 
-#### Minikube 로컬 환경
+#### Minikube 로컬 환경 (macOS/Docker Driver)
 ```bash
-# Minikube tunnel 실행 (ArgoCD용)
-minikube tunnel
+# Minikube service 명령어로 모든 서비스 접속 (브라우저 자동 열림)
 
-# Dev 환경
-http://localhost:30030          # Frontend
-http://localhost:30080          # Backend API
-http://localhost:30080/docs     # API 문서
+# ArgoCD UI
+minikube service argocd-server-nodeport -n argocd
 
-# Prod 환경
-http://localhost:31030          # Frontend
-http://localhost:31080          # Backend API
-http://localhost:31080/docs     # API 문서
+# Ingress를 통한 통합 접속 (Frontend + Backend)
+# 1. Ingress addon 활성화 (최초 1회)
+minikube addons enable ingress
 
-# ArgoCD
-http://127.0.0.1                # ArgoCD UI (tunnel 필요)
+# 2. /etc/hosts 파일에 추가
+echo "$(minikube ip) dev.visitor-app.local prod.visitor-app.local" | sudo tee -a /etc/hosts
+
+# 3. 접속
+# Dev: http://dev.visitor-app.local:30893
+# Prod: http://prod.visitor-app.local:30893
+
+# 또는 개별 서비스 접속
+minikube service visitor-frontend-service -n dev
+minikube service visitor-backend-service -n dev
+
+# Prod Frontend
+minikube service visitor-frontend-service -n prod
+
+# Prod Backend API 문서
+minikube service visitor-backend-service -n prod
+# 열린 URL에 /docs 추가
 ```
 
 #### EC2 환경
