@@ -58,17 +58,30 @@ kubectl wait --for=condition=available --timeout=600s deployment/argocd-server -
 ```
 
 ### 4. ArgoCD 접속
+
+#### 옵션 1: Minikube tunnel 사용 (권장)
+```bash
+# ArgoCD 서비스를 LoadBalancer로 변경
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+
+# 별도 터미널에서 실행 (sudo 권한 필요)
+minikube tunnel
+
+# 초기 admin 비밀번호 확인
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d && echo
+
+# 브라우저에서 http://127.0.0.1 접속
+# Username: admin
+# Password: 위에서 확인한 비밀번호
+```
+
+#### 옵션 2: 포트 포워딩 사용
 ```bash
 # 초기 admin 비밀번호 확인
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d && echo
 
-
-
 # 포트 포워딩으로 ArgoCD UI 접속
 kubectl port-forward svc/argocd-server -n argocd 8080:443
-
-# CLI로 로그인 (HTTPS 무시)
-argocd login localhost:8080 --username admin --password '비밀번호' --insecure
 
 # 브라우저에서 https://localhost:8080 접속
 # Username: admin
@@ -159,20 +172,42 @@ kubectl scale deployment sample-app -n dev --replicas=5
 
 ### EC2 보안 그룹 설정
 EC2 인스턴스의 보안 그룹에서 다음 포트를 열어주세요:
-- **30030**: Frontend (방문자 카운터 UI)
-- **30080**: Backend API
-- **8080**: ArgoCD UI (선택사항)
+- **30030**: Dev Frontend
+- **30080**: Dev Backend API
+- **31030**: Prod Frontend
+- **31080**: Prod Backend API
+- **80, 443**: ArgoCD UI (LoadBalancer 사용 시)
 
 ### 접속 방법
+
+#### Minikube 로컬 환경
 ```bash
-# Frontend 접속
-http://YOUR_EC2_PUBLIC_IP:30030
+# Minikube tunnel 실행 (ArgoCD용)
+minikube tunnel
 
-# Backend API 접속
-http://YOUR_EC2_PUBLIC_IP:30080
+# Dev 환경
+http://localhost:30030          # Frontend
+http://localhost:30080          # Backend API
+http://localhost:30080/docs     # API 문서
 
-# API 문서 확인
-http://YOUR_EC2_PUBLIC_IP:30080/docs
+# Prod 환경
+http://localhost:31030          # Frontend
+http://localhost:31080          # Backend API
+http://localhost:31080/docs     # API 문서
+
+# ArgoCD
+http://127.0.0.1                # ArgoCD UI (tunnel 필요)
+```
+
+#### EC2 환경
+```bash
+# Dev 환경
+http://YOUR_EC2_PUBLIC_IP:30030    # Frontend
+http://YOUR_EC2_PUBLIC_IP:30080    # Backend API
+
+# Prod 환경
+http://YOUR_EC2_PUBLIC_IP:31030    # Frontend
+http://YOUR_EC2_PUBLIC_IP:31080    # Backend API
 ```
 
 ### Minikube Tunnel 사용 (선택사항)
