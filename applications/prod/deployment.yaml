@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: nibceguy/visitor-backend:latest
+        image: astin75/visitor-backend:202506151630
         ports:
         - containerPort: 8000
         env:
@@ -75,7 +75,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: nibceguy/visitor-frontend:latest
+        image: astin75/visitor-frontend:202506151630
         ports:
         - containerPort: 3000
         env:
