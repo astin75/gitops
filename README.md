@@ -6,6 +6,10 @@ ArgoCD를 사용한 GitOps 튜토리얼입니다. Dev와 Prod 환경을 분리�
 
 ```
 gitops/
+├── .github/
+│   └── workflows/            # GitHub Actions
+│       ├── gitops-deploy.yml # 자동 빌드 및 배포
+│       └── pr-check.yml      # PR 빌드 테스트
 ├── argocd/                    # ArgoCD 설정
 │   ├── install.yaml          # ArgoCD 네임스페이스
 │   ├── argocd-server-nodeport.yaml  # NodePort 서비스
@@ -19,6 +23,9 @@ gitops/
 │   └── prod/                # Prod 환경
 │       ├── frontend/        
 │       └── backend/         
+├── app/                      # 애플리케이션 소스 코드
+│   ├── frontend/            # Next.js Frontend
+│   └── backend/             # FastAPI Backend
 └── README.md
 ```
 
@@ -98,10 +105,21 @@ http://EC2_IP:30443  # HTTPS
 
 ## 🔧 GitOps 워크플로우
 
-1. 코드 변경 → Git Push
-2. ArgoCD가 변경사항 감지
-3. Dev는 자동 동기화, Prod는 수동 승인
-4. Kubernetes에 배포
+### 자동화된 CI/CD 파이프라인
+1. **코드 변경** → feature 브랜치에서 작업
+2. **PR 생성** → dev 또는 prod 브랜치로 PR
+3. **자동 빌드 테스트** → PR 시 Docker 빌드 검증
+4. **Merge 시 자동 배포**:
+   - Docker 이미지 빌드 및 푸시 (태그: YYYYMMDDHH)
+   - Kubernetes 매니페스트 자동 업데이트
+   - ArgoCD가 변경사항 감지 및 배포
+
+### 브랜치 전략
+```
+feature/* → dev → prod
+```
+- `dev`: 자동 동기화 (테스트 환경)
+- `prod`: 수동 승인 필요 (운영 환경)
 
 ### ArgoCD CLI 명령어
 ```bash
@@ -116,6 +134,12 @@ argocd app get applications  # App of Apps 상태
 - ArgoCD 초기 비밀번호 변경 필수
 - Secrets는 Sealed Secrets 사용 권장
 - EC2 사용 시 보안 그룹에서 NodePort 포트 개방 필요
+
+### GitHub Actions 설정
+Repository Settings → Secrets and variables → Actions에서 설정:
+- `DOCKER_USERNAME`: Docker Hub 사용자명
+- `DOCKER_PASSWORD`: Docker Hub 비밀번호 또는 Access Token
+- `PAT` (선택사항): Personal Access Token - 자동 manifest 업데이트를 위해 필요
 
 ## 📚 참고 자료
 
