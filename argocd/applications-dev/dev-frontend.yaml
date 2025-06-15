@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: visitor-backend-prod
+  name: visitor-frontend-dev
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -9,15 +9,14 @@ spec:
   project: default
   source:
     repoURL: https://github.com/astin75/gitops
-    targetRevision: HEAD
-    path: applications/prod/backend
+    targetRevision: dev
+    path: applications/dev/frontend
   destination:
     server: https://kubernetes.default.svc
-    namespace: prod
+    namespace: dev
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
     - CreateNamespace=true
-    # Manual sync for production
-    # automated:
-    #   prune: false
-    #   selfHeal: false

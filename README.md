@@ -13,8 +13,10 @@ gitops/
 ├── argocd/                    # ArgoCD 설정
 │   ├── install.yaml          # ArgoCD 네임스페이스
 │   ├── argocd-server-nodeport.yaml  # NodePort 서비스
-│   ├── app-of-apps.yaml      # App of Apps 패턴
-│   └── applications/         # 개별 Application 정의
+│   ├── app-of-apps.yaml      # Main 브랜치 App of Apps
+│   ├── applications/         # App of Apps 관리
+│   ├── applications-dev/     # Dev 브랜치 Applications
+│   └── applications-prod/    # Prod 브랜치 Applications
 ├── namespaces/               # 네임스페이스 정의
 ├── applications/             # 애플리케이션 매니페스트
 │   ├── dev/                 # Dev 환경
@@ -32,9 +34,10 @@ gitops/
 ## 🚀 빠른 시작
 
 ```bash
-# 1. 저장소 클론
+# 1. 저장소 클론 및 브랜치 설정
 git clone https://github.com/astin75/gitops
 cd gitops
+./scripts/setup-branches.sh  # dev, prod 브랜치 자동 생성
 
 # 2. 기본 설치
 kubectl apply -f namespaces/
@@ -117,9 +120,14 @@ http://EC2_IP:30443  # HTTPS
 ### 브랜치 전략
 ```
 feature/* → dev → prod
+          ↓     ↓
+        Dev Apps  Prod Apps
 ```
-- `dev`: 자동 동기화 (테스트 환경)
-- `prod`: 수동 승인 필요 (운영 환경)
+- `main`: ArgoCD 설정 및 App of Apps 관리
+- `dev`: Dev 환경 배포 (자동 동기화)
+- `prod`: Prod 환경 배포 (수동 승인)
+
+각 브랜치는 해당 환경의 manifest만 추적합니다.
 
 ### ArgoCD CLI 명령어
 ```bash

@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/astin75/gitops
-    targetRevision: HEAD
+    targetRevision: dev
     path: applications/dev/backend
   destination:
     server: https://kubernetes.default.svc
