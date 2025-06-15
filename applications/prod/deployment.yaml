@@ -21,6 +21,7 @@ spec:
       containers:
       - name: backend
         image: astin75/visitor-backend:202506151630
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
         env:
@@ -76,6 +77,7 @@ spec:
       containers:
       - name: frontend
         image: astin75/visitor-frontend:202506151630
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
         env:
