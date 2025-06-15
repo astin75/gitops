@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: visitor-backend
+  namespace: dev
+  labels:
+    app: visitor-backend
+    environment: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: visitor-backend
+      environment: dev
+  template:
+    metadata:
+      labels:
+        app: visitor-backend
+        environment: dev
+    spec:
+      containers:
+      - name: backend
+        image: astin75/visitor-backend:202506151630
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "development"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5

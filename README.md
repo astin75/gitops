@@ -15,12 +15,20 @@ gitops/
 │   └── prod.yaml            # Prod 네임스페이스
 ├── applications/             # 애플리케이션 매니페스트
 │   ├── dev/                 # Dev 환경 설정
-│   │   ├── deployment.yaml  # Frontend + Backend 통합 배포
-│   │   ├── service.yaml     # 통합 서비스 (NodePort)
+│   │   ├── frontend/        # Frontend 서비스
+│   │   │   ├── deployment.yaml
+│   │   │   └── service.yaml
+│   │   ├── backend/         # Backend 서비스
+│   │   │   ├── deployment.yaml
+│   │   │   └── service.yaml
 │   │   └── configmap.yaml   # 설정
 │   └── prod/                # Prod 환경 설정
-│       ├── deployment.yaml  # Frontend + Backend 통합 배포 (PVC 포함)
-│       ├── service.yaml     # 통합 서비스 (NodePort)
+│       ├── frontend/        # Frontend 서비스
+│       │   ├── deployment.yaml
+│       │   └── service.yaml
+│       ├── backend/         # Backend 서비스 (PVC 포함)
+│       │   ├── deployment.yaml
+│       │   └── service.yaml
 │       └── configmap.yaml   # 설정
 └── README.md
 ```
@@ -119,19 +127,23 @@ argocd app get sample-app-prod
 ## 📝 주요 차이점 (Dev vs Prod)
 
 ### Dev 환경
-- **Replicas**: 2개 (빠른 테스트)
+- **Replicas**: 1개 (빠른 테스트)
 - **리소스**: 적음 (CPU: 100m-200m, Memory: 128Mi-256Mi)
 - **자동 동기화**: 활성화 (selfHeal: true)
 - **디버그**: 활성화
-- **Service**: NodePort (30030: Frontend, 30080: Backend)
+- **Service**: 
+  - Frontend: NodePort 30030
+  - Backend: NodePort 30080
 
 ### Prod 환경
-- **Replicas**: 3개 (고가용성)
+- **Replicas**: 2개 (고가용성)
 - **리소스**: 많음 (CPU: 250m-500m, Memory: 256Mi-512Mi)
 - **자동 동기화**: 비활성화 (수동 승인 필요)
 - **헬스체크**: Liveness/Readiness 프로브 설정
-- **보안**: 강화된 nginx 설정, SSL 활성화
-- **Service**: NodePort (필요 시 LoadBalancer로 변경 가능)
+- **PersistentVolume**: Backend 데이터 영구 저장
+- **Service**: 
+  - Frontend: NodePort 31030
+  - Backend: NodePort 31080
 
 ## 🔧 커스터마이징
 
@@ -160,8 +172,10 @@ kubectl scale deployment sample-app -n dev --replicas=5
 ### 애플리케이션 정보
 이 GitOps 프로젝트는 방문자 카운터 애플리케이션을 배포합니다:
 - **Frontend**: Next.js 기반 UI (중앙 버튼 클릭 시 카운터 증가)
+  - 설정 버튼을 통해 Backend URL을 브라우저에서 직접 입력 가능
+  - 이미지: `astin75/visitor-frontend:202506152110`
 - **Backend**: FastAPI 기반 API (방문자 수 저장 및 조회)
-- **이미지**: `astin75/visitor-frontend:202506151630`, `astin75/visitor-backend:202506151630`
+  - 이미지: `astin75/visitor-backend:202506151630`
 
 ### 빠른 시작 가이드 (macOS Minikube)
 ```bash
@@ -184,11 +198,13 @@ kubectl apply -f argocd/app-prod.yaml
 minikube service argocd-server-nodeport -n argocd
 # 비밀번호: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
 
-# Dev 환경 Frontend
-minikube service visitor-frontend-service -n dev
+# Dev 환경
+minikube service visitor-frontend-service -n dev  # Frontend
+minikube service visitor-backend-service -n dev   # Backend
 
-# Prod 환경 Frontend  
-minikube service visitor-frontend-service -n prod
+# Prod 환경
+minikube service visitor-frontend-service -n prod # Frontend  
+minikube service visitor-backend-service -n prod  # Backend
 ```
 
 ## 🚀 EC2 Minikube 배포 가이드
@@ -197,10 +213,10 @@ minikube service visitor-frontend-service -n prod
 
 ### EC2 보안 그룹 설정
 EC2 인스턴스의 보안 그룹에서 다음 포트를 열어주세요:
-- **30000**: Dev Frontend
-- **30001**: Dev Backend API
-- **31000**: Prod Frontend
-- **31001**: Prod Backend API
+- **30030**: Dev Frontend
+- **30080**: Dev Backend
+- **31030**: Prod Frontend
+- **31080**: Prod Backend
 - **30200, 30443**: ArgoCD UI
 
 ### 접속 방법
@@ -212,15 +228,21 @@ EC2 인스턴스의 보안 그룹에서 다음 포트를 열어주세요:
 # ArgoCD UI
 minikube service argocd-server-nodeport -n argocd
 
-# Dev 환경 접속
-minikube service visitor-app-service -n dev --url=true
-# 첫 번째 URL (포트 30000): Frontend
-# 두 번째 URL (포트 30001): Backend API (/docs 추가 가능)
+# Dev 환경
+minikube service visitor-frontend-service -n dev  # Frontend 브라우저 자동 열림
+minikube service visitor-backend-service -n dev   # Backend API
 
-# Prod 환경 접속
-minikube service visitor-app-service -n prod --url=true
-# 첫 번째 URL (포트 31000): Frontend
-# 두 번째 URL (포트 31001): Backend API (/docs 추가 가능)
+# URL만 확인하려면
+minikube service visitor-backend-service -n dev --url
+
+# Prod 환경
+minikube service visitor-frontend-service -n prod # Frontend 브라우저 자동 열림
+minikube service visitor-backend-service -n prod  # Backend API
+
+# Frontend 설정 방법:
+# 1. Frontend 페이지 우측 상단 ⚙️ 설정 버튼 클릭
+# 2. Backend URL 입력 (예: http://192.168.49.2:30080)
+# 3. 저장 버튼 클릭
 
 ```
 
@@ -233,6 +255,11 @@ http://YOUR_EC2_PUBLIC_IP:30080    # Backend API
 # Prod 환경
 http://YOUR_EC2_PUBLIC_IP:31030    # Frontend
 http://YOUR_EC2_PUBLIC_IP:31080    # Backend API
+
+# Frontend에서 Backend 연결:
+# 1. Frontend 페이지의 ⚙️ 설정 버튼 클릭
+# 2. Backend URL 입력: http://YOUR_EC2_PUBLIC_IP:30080 (Dev) 또는 http://YOUR_EC2_PUBLIC_IP:31080 (Prod)
+# 3. 저장
 ```
 
 ### Minikube Tunnel 사용 (선택사항)

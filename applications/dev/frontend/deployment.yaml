@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: visitor-frontend
+  namespace: dev
+  labels:
+    app: visitor-frontend
+    environment: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: visitor-frontend
+      environment: dev
+  template:
+    metadata:
+      labels:
+        app: visitor-frontend
+        environment: dev
+    spec:
+      containers:
+      - name: frontend
+        image: astin75/visitor-frontend:202506152100
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "development"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
