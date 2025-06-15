@@ -8,8 +8,14 @@
 gitops/
 ├── argocd/                    # ArgoCD 관련 설정
 │   ├── install.yaml          # ArgoCD 설치 매니페스트
-│   ├── app-dev.yaml         # Dev 환경 Application
-│   └── app-prod.yaml        # Prod 환경 Application
+│   ├── argocd-server-nodeport.yaml  # ArgoCD NodePort 서비스
+│   ├── app-of-apps.yaml      # App of Apps 패턴 (모든 앱 관리)
+│   └── applications/         # 개별 Application 정의
+│       ├── dev-frontend.yaml
+│       ├── dev-backend.yaml
+│       ├── prod-frontend.yaml
+│       ├── prod-backend.yaml
+│       └── kustomization.yaml
 ├── namespaces/               # 네임스페이스 정의
 │   ├── dev.yaml             # Dev 네임스페이스
 │   └── prod.yaml            # Prod 네임스페이스
@@ -93,21 +99,26 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 # Password: 위에서 확인한 비밀번호
 ```
 
-### 5. Git 저장소 설정
-ArgoCD Application 매니페스트에서 Git 저장소 URL을 수정합니다:
+### 5. ArgoCD Applications 생성 (App of Apps 패턴)
+
+#### 방법 1: App of Apps 패턴 (권장)
+하나의 Application으로 모든 애플리케이션을 관리합니다:
 ```bash
-# argocd/app-dev.yaml과 argocd/app-prod.yaml 파일에서
-# repoURL을 본인의 Git 저장소 URL로 변경
-sed -i 's|https://github.com/YOUR_USERNAME/gitops.git|YOUR_ACTUAL_REPO_URL|g' argocd/app-*.yaml
+# App of Apps 생성 - 모든 애플리케이션이 자동으로 생성됩니다
+kubectl apply -f argocd/app-of-apps.yaml
 ```
 
-### 6. ArgoCD Applications 생성
+#### 방법 2: 개별 Application 생성
+각 애플리케이션을 개별적으로 생성하려면:
 ```bash
-# Dev 환경 애플리케이션 생성
-kubectl apply -f argocd/app-dev.yaml
+# 모든 애플리케이션 한번에 생성
+kubectl apply -f argocd/applications/
 
-# Prod 환경 애플리케이션 생성
-kubectl apply -f argocd/app-prod.yaml
+# 또는 개별적으로 생성
+kubectl apply -f argocd/applications/dev-frontend.yaml
+kubectl apply -f argocd/applications/dev-backend.yaml
+kubectl apply -f argocd/applications/prod-frontend.yaml
+kubectl apply -f argocd/applications/prod-backend.yaml
 ```
 
 ### 7. 배포 확인
@@ -120,8 +131,13 @@ kubectl get all -n prod
 
 # ArgoCD CLI로 상태 확인 (선택사항)
 argocd app list
-argocd app get sample-app-dev
-argocd app get sample-app-prod
+argocd app get visitor-frontend-dev
+argocd app get visitor-backend-dev
+argocd app get visitor-frontend-prod
+argocd app get visitor-backend-prod
+
+# 또는 App of Apps 상태 확인
+argocd app get applications
 ```
 
 ## 📝 주요 차이점 (Dev vs Prod)
@@ -177,10 +193,20 @@ kubectl scale deployment sample-app -n dev --replicas=5
 - **Backend**: FastAPI 기반 API (방문자 수 저장 및 조회)
   - 이미지: `astin75/visitor-backend:202506151630`
 
+### ArgoCD Application 구조
+이 프로젝트는 "App of Apps" 패턴을 사용하여 모든 애플리케이션을 관리합니다:
+- **applications**: 모든 ArgoCD Application을 관리하는 상위 App
+  - **visitor-frontend-dev**: Dev Frontend 애플리케이션
+  - **visitor-backend-dev**: Dev Backend 애플리케이션  
+  - **visitor-frontend-prod**: Prod Frontend 애플리케이션
+  - **visitor-backend-prod**: Prod Backend 애플리케이션
+
+각 애플리케이션은 Git 저장소의 특정 경로를 모니터링하고 자동으로 동기화합니다.
+
 ### 빠른 시작 가이드 (macOS Minikube)
 ```bash
 # 1. 저장소 클론 및 설정
-git clone <your-repo-url>
+git clone https://github.com/astin75/gitops
 cd gitops
 
 # 2. 네임스페이스 및 ArgoCD 설치
@@ -189,9 +215,8 @@ kubectl apply -f argocd/install.yaml
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl apply -f argocd/argocd-server-nodeport.yaml
 
-# 3. ArgoCD Applications 생성
-kubectl apply -f argocd/app-dev.yaml
-kubectl apply -f argocd/app-prod.yaml
+# 3. ArgoCD App of Apps 생성 (모든 애플리케이션 자동 생성)
+kubectl apply -f argocd/app-of-apps.yaml
 
 # 4. 모든 서비스 접속 (브라우저가 자동으로 열림)
 # ArgoCD UI

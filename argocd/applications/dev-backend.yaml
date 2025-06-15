@@ -1,22 +1,22 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: sample-app-prod
+  name: visitor-backend-dev
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
-    repoURL: https://github.com/YOUR_USERNAME/gitops.git  # Git 저장소 URL로 변경하세요
+    repoURL: https://github.com/astin75/gitops
     targetRevision: HEAD
-    path: applications/prod
+    path: applications/dev/backend
   destination:
     server: https://kubernetes.default.svc
-    namespace: prod
+    namespace: dev
   syncPolicy:
     automated:
       prune: true
-      selfHeal: false  # Production은 수동 승인 권장
+      selfHeal: true
     syncOptions:
     - CreateNamespace=true
