@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: astin75/visitor-frontend:202506152110
+        image: astin75/visitor-frontend:2025061809
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
