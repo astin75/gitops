@@ -28,3 +28,4 @@ EXPOSE 8000
 
 # 애플리케이션 실행
 CMD [".venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# build x
