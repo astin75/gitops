@@ -41,17 +41,17 @@ cd gitops
 
 # 2. 기본 설치
 kubectl apply -f namespaces/
-kubectl apply -f argocd/install.yaml
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl apply -f argocd/argocd-server-nodeport.yaml
 
-# 3. ArgoCD App of Apps 생성 (모든 애플리케이션 자동 배포)
-kubectl apply -f argocd/app-of-apps.yaml
-
-# 4. ArgoCD UI 접속
+# 3. ArgoCD UI 접속
 minikube service argocd-server-nodeport -n argocd
 # Username: admin
 # Password: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
+
+# 4. ArgoCD App of Apps 생성 (모든 애플리케이션 자동 배포)
+kubectl apply -f argocd/app-of-apps.yaml
+
 
 # 5. 애플리케이션 접속
 minikube service visitor-frontend-service -n dev  # Dev Frontend
@@ -136,6 +136,12 @@ argocd app sync visitor-frontend-dev
 argocd app get applications  # App of Apps 상태
 ```
 
+### Docker groups
+sudo usermod -aG docker $USER
+newgrp docker
+docker version
+
+
 ## 📝 주의사항
 
 - Production에서는 Git 저장소를 private으로 설정
@@ -154,3 +160,6 @@ Repository Settings → Secrets and variables → Actions에서 설정:
 - [ArgoCD 문서](https://argo-cd.readthedocs.io/)
 - [GitOps 원칙](https://www.gitops.tech/)
 - [프로젝트 저장소](https://github.com/astin75/gitops)
+- [Dokcer install](https://docs.docker.com/engine/install/ubuntu/)
+- [minikube install](https://minikube.sigs.k8s.io/docs/start/?arch=%2Flinux%2Fx86-64%2Fstable%2Fbinary+download)
+- [kubectl](https://kubernetes.io/ko/docs/tasks/tools/install-kubectl-linux/)
