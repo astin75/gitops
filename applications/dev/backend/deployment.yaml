@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: astin75/visitor-backend:202506151630
+        image: astin75/visitor-backend:2025061809
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
